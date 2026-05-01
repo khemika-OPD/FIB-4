@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIB-4 Calculator - โดย เขมิกา พงษ์ศรี</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #f59e0b; /* สีส้มทองสดใส */
+            --secondary: #ef4444; /* สีแดงส้ม */
+            --bg: #fff7ed;
+        }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 450px; width: 100%; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #ffedd5; }
+        
+        .header { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; padding: 35px 25px; text-align: center; }
+        .header h1 { margin: 0; font-size: 26px; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+        
+        .content { padding: 30px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #451a03; }
+        input { width: 100%; padding: 14px; border: 2px solid #fed7aa; border-radius: 12px; box-sizing: border-box; font-size: 16px; background-color: #fffaf5; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; background-color: white; }
+
+        button.calc-btn { width: 100%; padding: 18px; background: linear-gradient(to right, #f59e0b, #ef4444); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button.calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3); }
+
+        #result-box { margin-top: 25px; padding: 20px; border-radius: 15px; text-align: center; display: none; }
+        
+        .qr-section { text-align: center; padding: 20px; border-top: 1px dashed #fdba74; }
+        .btn-qr { background: #ffedd5; color: #9a3412; padding: 8px 15px; border-radius: 20px; font-size: 13px; border: none; cursor: pointer; font-weight: bold; }
+        #qrcode { display: flex; justify-content: center; margin-top: 15px; }
+
+        .footer { background: #fffaf5; padding: 20px; text-align: center; font-size: 14px; color: #7c2d12; border-top: 1px solid #ffedd5; }
+        .dev-name { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>FIB-4 Calculator</h1>
+        <p>เครื่องมือประเมินภาวะพังผืดในตับ</p>
+    </div>
+
+    <div class="content">
+        <div class="input-group">
+            <label>อายุ (ปี)</label>
+            <input type="number" id="age" placeholder="ระบุอายุ">
+        </div>
+        <div class="input-group">
+            <label>AST (U/L)</label>
+            <input type="number" id="ast" placeholder="ระบุค่า AST">
+        </div>
+        <div class="input-group">
+            <label>Platelet (x10³/µL)</label>
+            <input type="number" id="plt" placeholder="ระบุค่า Platelet (เช่น 150)">
+        </div>
+        <div class="input-group">
+            <label>ALT (U/L)</label>
+            <input type="number" id="alt" placeholder="ระบุค่า ALT">
+        </div>
+
+        <button class="calc-btn" onclick="calculateFIB4()">คำนวณผลประเมิน</button>
+
+        <div id="result-box">
+            <div id="fib-score" style="font-size: 32px; font-weight: bold;"></div>
+            <div id="fib-status" style="font-size: 18px; margin-top: 5px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div class="qr-section">
+        <button class="btn-qr" onclick="toggleQR()">แสดง/ซ่อน QR สำหรับแชร์</button>
+        <div id="qr-container" style="display:none;">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        พัฒนาโดย <span class="dev-name">เขมิกา พงษ์ศรี</span><br>
+        โรงพยาบาลตาคลี
+    </div>
+</div>
+
+<script>
+    function calculateFIB4() {
+        const age = parseFloat(document.getElementById('age').value);
+        const ast = parseFloat(document.getElementById('ast').value);
+        const plt = parseFloat(document.getElementById('plt').value);
+        const alt = parseFloat(document.getElementById('alt').value);
+
+        if (!age || !ast || !plt || !alt) {
+            alert("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่องค่ะ");
+            return;
+        }
+
+        const fib4 = (age * ast) / (plt * Math.sqrt(alt));
+        const score = fib4.toFixed(2);
+
+        const resBox = document.getElementById('result-box');
+        const scoreDiv = document.getElementById('fib-score');
+        const statusDiv = document.getElementById('fib-status');
+
+        let status = "";
+        let color = "";
+        let bg = "";
+
+        // เกณฑ์การแปลผลทั่วไป
+        if (score < 1.45) {
+            status = "ความเสี่ยงพังผืดตับต่ำ (Low Risk)";
+            color = "#155724"; bg = "#d4edda";
+        } else if (score <= 3.25) {
+            status = "ปานกลาง / ไม่ชัดเจน (Indeterminate)";
+            color = "#856404"; bg = "#fff3cd";
+        } else {
+            status = "ความเสี่ยงสูง (High Risk / Advanced Fibrosis)";
+            color = "#721c24"; bg = "#f8d7da";
+        }
+
+        resBox.style.display = "block";
+        resBox.style.backgroundColor = bg;
+        scoreDiv.innerText = "FIB-4 = " + score;
+        scoreDiv.style.color = color;
+        statusDiv.innerText = status;
+        statusDiv.style.color = color;
+        
+        resBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    var qrcode = new QRCode(document.getElementById("qrcode"), {
+        text: window.location.href,
+        width: 128,
+        height: 128
+    });
+
+    function toggleQR() {
+        var x = document.getElementById("qr-container");
+        x.style.display = (x.style.display === "none") ? "block" : "none";
+    }
+</script>
+
+</body>
+</html>
