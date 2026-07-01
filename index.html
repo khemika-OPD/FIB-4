@@ -86,12 +86,14 @@
             <button class="clear-btn" onclick="clearAll()">ล้างข้อมูล</button>
         </div>
 
+        <!-- กล่องแสดงผล FIB-4 -->
         <div id="fib4-box" class="result-card">
             <div class="result-title" style="color: #451a03;">ดัชนี FIB-4 Index</div>
             <div id="fib4-score" class="score-val"></div>
             <div id="fib4-status" class="status-val"></div>
         </div>
 
+        <!-- กล่องแสดงผล APRI -->
         <div id="apri-box" class="result-card">
             <div class="result-title" style="color: #451a03;">ดัชนี APRI Score</div>
             <div id="apri-score" class="score-val"></div>
@@ -124,19 +126,14 @@
         const fib4Box = document.getElementById('fib4-box');
         const apriBox = document.getElementById('apri-box');
         
-        // รีเซ็ตการแสดงผลก่อนการคำนวณใหม่
+        // รีเซ็ตซ่อนหน้าต่างผลลัพธ์เดิมก่อนทุกครั้ง
         fib4Box.style.display = 'none';
         apriBox.style.display = 'none';
 
-        // เช็กตัวแปรขั้นต่ำพื้นฐาน (ตัวแปรจำเป็นอย่าง AST และ เกล็ดเลือด ต้องมีเสมอ)
-        if (isNaN(ast) || isNaN(plt)) {
-            alert("กรุณากรอกค่า AST และ Platelet Count เป็นอย่างน้อยเพื่อทำการคำนวณค่ะ");
-            return;
-        }
+        let showFib4 = false;
+        let showApri = false;
 
-        let hasCalculated = false;
-
-        // 1. ตรรกะประมวลผล FIB-4 (ต้องการครบทั้ง อายุ, AST, ALT, Platelet)
+        // 1. ตรรกะประมวลผล FIB-4: ตรวจสอบความพร้อมของข้อมูลครบทั้ง 4 ตัวแปรเสรี
         if (!isNaN(age) && !isNaN(ast) && !isNaN(alt) && !isNaN(plt) && alt > 0) {
             const fib4Formula = (age * ast) / (plt * Math.sqrt(alt));
             const fib4Score = fib4Formula.toFixed(2);
@@ -158,10 +155,10 @@
             fib4ScoreDiv.style.color = fColor;
             fib4StatusDiv.innerText = fStatus;
             fib4StatusDiv.style.color = fColor;
-            hasCalculated = true;
+            showFib4 = true;
         }
 
-        // 2. ตรรกะประมวลผล APRI (ต้องการเพียง AST, AST ULN, Platelet)
+        // 2. ตรรกะประมวลผล APRI: ตรวจสอบความพร้อมเฉพาะตัวแปร AST, AST ULN, และ Platelet เท่านั้น
         if (!isNaN(ast) && !isNaN(ast_uln) && !isNaN(plt) && ast_uln > 0) {
             const apriFormula = ((ast / ast_uln) / plt) * 100;
             const apriScore = apriFormula.toFixed(2);
@@ -183,15 +180,17 @@
             apriScoreDiv.style.color = aColor;
             apriStatusDiv.innerText = aStatus;
             apriStatusDiv.style.color = aColor;
-            hasCalculated = true;
+            showApri = true;
         }
 
-        if (hasCalculated) {
-            // เลื่อนหน้าจอลงมาดูผลลัพธ์แบบนุ่มนวล
-            const targetBox = fib4Box.style.display === "block" ? fib4Box : apriBox;
-            targetBox.scrollIntoView({ behavior: 'smooth' });
+        // เลื่อนหน้าจอลงมาแสดงผลลัพธ์ตามจริงที่คำนวณได้
+        if (showFib4) {
+            fib4Box.scrollIntoView({ behavior: 'smooth' });
+        } else if (showApri) {
+            apriBox.scrollIntoView({ behavior: 'smooth' });
         } else {
-            alert("ข้อมูลที่ระบุไม่เพียงพอต่อการคำนวณดัชนีใด ๆ ค่ะ");
+            // กรณีที่ค่าสำคัญขั้นต่ำสุดอย่าง AST หรือ Platelet ขาดหายไปเลย
+            alert("กรุณากรอกข้อมูลดัชนีตับขั้นต่ำ (เช่น AST และ Platelet Count) เพื่อประมวลผลค่ะ");
         }
     }
 
