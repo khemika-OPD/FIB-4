@@ -25,8 +25,12 @@
         input { width: 100%; padding: 14px; border: 2px solid #fed7aa; border-radius: 12px; box-sizing: border-box; font-size: 16px; background-color: #fffaf5; transition: 0.3s; }
         input:focus { border-color: var(--primary); outline: none; background-color: white; }
 
-        button.calc-btn { width: 100%; padding: 18px; background: linear-gradient(to right, #f59e0b, #ef4444); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        button.calc-btn { flex: 2; padding: 18px; background: linear-gradient(to right, #f59e0b, #ef4444); color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button.calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3); }
+        
+        button.clear-btn { flex: 1; padding: 18px; background: #e2e8f0; color: #475569; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button.clear-btn:hover { background: #cbd5e1; color: #334155; }
 
         .result-card { margin-top: 20px; padding: 15px; border-radius: 15px; text-align: center; display: none; border: 1px solid rgba(0,0,0,0.05); }
         .result-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 5px; }
@@ -77,7 +81,10 @@
             <input type="number" id="plt" placeholder="ระบุเกล็ดเลือด เช่น 150">
         </div>
 
-        <button class="calc-btn" onclick="calculateAll()">คำนวณผลประเมิน</button>
+        <div class="btn-row">
+            <button class="calc-btn" onclick="calculateAll()">คำนวณผลประเมิน</button>
+            <button class="clear-btn" onclick="clearAll()">ล้างข้อมูล</button>
+        </div>
 
         <div id="fib4-box" class="result-card">
             <div class="result-title" style="color: #451a03;">ดัชนี FIB-4 Index</div>
@@ -106,69 +113,99 @@
 
 <script>
     function calculateAll() {
+        // ดึงค่าอินพุตทั้งหมดแปลงเป็นตัวเลข
         const age = parseFloat(document.getElementById('age').value);
         const ast_uln = parseFloat(document.getElementById('ast_uln').value);
         const ast = parseFloat(document.getElementById('ast').value);
         const alt = parseFloat(document.getElementById('alt').value);
         const plt = parseFloat(document.getElementById('plt').value);
 
-        if (!age || !ast_uln || !ast || !alt || !plt) {
-            alert("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่องค่ะ");
+        // ดึงองค์ประกอบฝั่งแสดงผล
+        const fib4Box = document.getElementById('fib4-box');
+        const apriBox = document.getElementById('apri-box');
+        
+        // รีเซ็ตการแสดงผลก่อนการคำนวณใหม่
+        fib4Box.style.display = 'none';
+        apriBox.style.display = 'none';
+
+        // เช็กตัวแปรขั้นต่ำพื้นฐาน (ตัวแปรจำเป็นอย่าง AST และ เกล็ดเลือด ต้องมีเสมอ)
+        if (isNaN(ast) || isNaN(plt)) {
+            alert("กรุณากรอกค่า AST และ Platelet Count เป็นอย่างน้อยเพื่อทำการคำนวณค่ะ");
             return;
         }
 
-        // 1. คำนวณ FIB-4
-        const fib4Formula = (age * ast) / (plt * Math.sqrt(alt));
-        const fib4Score = fib4Formula.toFixed(2);
-        
-        // 2. คำนวณ APRI (สูตร: [(AST / AST ULN) / Platelet] * 100)
-        // หมายเหตุ: ในสูตรสากล Platelet ใช้หน่วยเป็น x10^9/L ซึ่งค่าที่กรอกมาเป็น x10^3/uL มีตัวเลขเท่ากันพอดีค่ะ
-        const apriFormula = ((ast / ast_uln) / plt) * 100;
-        const apriScore = apriFormula.toFixed(2);
+        let hasCalculated = false;
 
-        // แสดงและแปรผล FIB-4
-        const fib4Box = document.getElementById('fib4-box');
-        const fib4ScoreDiv = document.getElementById('fib4-score');
-        const fib4StatusDiv = document.getElementById('fib4-status');
-        
-        let fStatus = "", fColor = "", fBg = "";
-        if (fib4Score < 1.45) {
-            fStatus = "ความเสี่ยงพังผืดตับต่ำ (Low Risk)"; fColor = "#155724"; fBg = "#d4edda";
-        } else if (fib4Score <= 3.25) {
-            fStatus = "ความเสี่ยงปานกลาง / ไม่ชัดเจน (Indeterminate)"; fColor = "#856404"; fBg = "#fff3cd";
-        } else {
-            fStatus = "ความเสี่ยงสูง (High Risk / Advanced Fibrosis)"; fColor = "#721c24"; fBg = "#f8d7da";
+        // 1. ตรรกะประมวลผล FIB-4 (ต้องการครบทั้ง อายุ, AST, ALT, Platelet)
+        if (!isNaN(age) && !isNaN(ast) && !isNaN(alt) && !isNaN(plt) && alt > 0) {
+            const fib4Formula = (age * ast) / (plt * Math.sqrt(alt));
+            const fib4Score = fib4Formula.toFixed(2);
+            const fib4ScoreDiv = document.getElementById('fib4-score');
+            const fib4StatusDiv = document.getElementById('fib4-status');
+            
+            let fStatus = "", fColor = "", fBg = "";
+            if (fib4Score < 1.45) {
+                fStatus = "ความเสี่ยงพังผืดตับต่ำ (Low Risk)"; fColor = "#155724"; fBg = "#d4edda";
+            } else if (fib4Score <= 3.25) {
+                fStatus = "ความเสี่ยงปานกลาง / ไม่ชัดเจน (Indeterminate)"; fColor = "#856404"; fBg = "#fff3cd";
+            } else {
+                fStatus = "ความเสี่ยงสูง (High Risk / Advanced Fibrosis)"; fColor = "#721c24"; fBg = "#f8d7da";
+            }
+            
+            fib4Box.style.display = "block";
+            fib4Box.style.backgroundColor = fBg;
+            fib4ScoreDiv.innerText = "FIB-4 = " + fib4Score;
+            fib4ScoreDiv.style.color = fColor;
+            fib4StatusDiv.innerText = fStatus;
+            fib4StatusDiv.style.color = fColor;
+            hasCalculated = true;
         }
-        
-        fib4Box.style.display = "block";
-        fib4Box.style.backgroundColor = fBg;
-        fib4ScoreDiv.innerText = "FIB-4 = " + fib4Score;
-        fib4ScoreDiv.style.color = fColor;
-        fib4StatusDiv.innerText = fStatus;
-        fib4StatusDiv.style.color = fColor;
 
-        // แสดงและแปรผล APRI
-        const apriBox = document.getElementById('apri-box');
-        const apriScoreDiv = document.getElementById('apri-score');
-        const apriStatusDiv = document.getElementById('apri-status');
-        
-        let aStatus = "", aColor = "", aBg = "";
-        if (apriScore <= 0.5) {
-            aStatus = "ความเสี่ยงพังผืดตับต่ำ (Low Risk)"; aColor = "#155724"; aBg = "#d4edda";
-        } else if (apriScore <= 1.5) {
-            aStatus = "ความเสี่ยงปานกลาง (Moderate Fibrosis)"; aColor = "#856404"; aBg = "#fff3cd";
-        } else {
-            aStatus = "ความเสี่ยงสูงมาก / แนวโน้มตับแข็ง (High Risk / Cirrhosis)"; aColor = "#721c24"; aBg = "#f8d7da";
+        // 2. ตรรกะประมวลผล APRI (ต้องการเพียง AST, AST ULN, Platelet)
+        if (!isNaN(ast) && !isNaN(ast_uln) && !isNaN(plt) && ast_uln > 0) {
+            const apriFormula = ((ast / ast_uln) / plt) * 100;
+            const apriScore = apriFormula.toFixed(2);
+            const apriScoreDiv = document.getElementById('apri-score');
+            const apriStatusDiv = document.getElementById('apri-status');
+            
+            let aStatus = "", aColor = "", aBg = "";
+            if (apriScore <= 0.5) {
+                aStatus = "ความเสี่ยงพังผืดตับต่ำ (Low Risk)"; aColor = "#155724"; aBg = "#d4edda";
+            } else if (apriScore <= 1.5) {
+                aStatus = "ความเสี่ยงปานกลาง (Moderate Fibrosis)"; aColor = "#856404"; aBg = "#fff3cd";
+            } else {
+                aStatus = "ความเสี่ยงสูงมาก / แนวโน้มตับแข็ง (High Risk / Cirrhosis)"; aColor = "#721c24"; aBg = "#f8d7da";
+            }
+            
+            apriBox.style.display = "block";
+            apriBox.style.backgroundColor = aBg;
+            apriScoreDiv.innerText = "APRI = " + apriScore;
+            apriScoreDiv.style.color = aColor;
+            apriStatusDiv.innerText = aStatus;
+            apriStatusDiv.style.color = aColor;
+            hasCalculated = true;
         }
+
+        if (hasCalculated) {
+            // เลื่อนหน้าจอลงมาดูผลลัพธ์แบบนุ่มนวล
+            const targetBox = fib4Box.style.display === "block" ? fib4Box : apriBox;
+            targetBox.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert("ข้อมูลที่ระบุไม่เพียงพอต่อการคำนวณดัชนีใด ๆ ค่ะ");
+        }
+    }
+
+    function clearAll() {
+        document.getElementById('age').value = '';
+        document.getElementById('ast_uln').value = '40';
+        document.getElementById('ast').value = '';
+        document.getElementById('alt').value = '';
+        document.getElementById('plt').value = '';
         
-        apriBox.style.display = "block";
-        apriBox.style.backgroundColor = aBg;
-        apriScoreDiv.innerText = "APRI = " + apriScore;
-        apriScoreDiv.style.color = aColor;
-        apriStatusDiv.innerText = aStatus;
-        apriStatusDiv.style.color = aColor;
+        document.getElementById('fib4-box').style.display = 'none';
+        document.getElementById('apri-box').style.display = 'none';
         
-        fib4Box.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     var qrcode = new QRCode(document.getElementById("qrcode"), {
